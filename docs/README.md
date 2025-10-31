@@ -93,7 +93,7 @@ Development workflow and agent instructions.
 
 1. **Component Patterns**: Read [component-patterns.instructions.md](../.github/instructions/component-patterns.instructions.md)
 2. **Figma MCP Rules**: Read [figma-mcp.instructions.md](../.github/instructions/figma-mcp.instructions.md)
-3. **MCP Tools**: Use `list_components`, `get_component_context`, `list_tokens`, `compare_variants`
+3. **MCP Tools**: Use `list_components`, `get_component_context`, `list_tokens`, `compare_variants`, `suggest_components_from_figma`
 
 ---
 

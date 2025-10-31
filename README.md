@@ -311,6 +311,41 @@ This project uses **Figma MCP** for pixel-perfect design implementation:
 - Use Figma blur values directly
 - Skip documentation (both spec + mapping required)
 
+### 🆕 Figma Component Suggestion Feature
+
+**NEW:** Automatically suggest matching components from your design system based on Figma selection!
+
+**How it works:**
+1. Select a frame/component in Figma Desktop
+2. Call `suggest_components_from_figma` tool
+3. Get top 5 suggested components with match scores and usage examples
+
+**Example:**
+```typescript
+// Select a button in Figma, then call:
+mcp_skullcandy_mc_suggest_components_from_figma()
+
+// Returns:
+{
+  "suggestions": [
+    {
+      "component": "Button",
+      "matchScore": 90,
+      "matchReasons": ["Node name contains 'button'", "Has text content"],
+      "usage": "<Button style=\"CTA\" size=\"M\">Buy Now</Button>"
+    }
+  ]
+}
+```
+
+**Matching Features:**
+- Pattern matching on node names (button, card, input, nav)
+- Content analysis (text, images, interactive elements)
+- Score-based ranking (0-100)
+- Contextual code examples using actual Figma content
+
+📖 **Full documentation:** [docs/features/FIGMA_INTEGRATION.md](docs/features/FIGMA_INTEGRATION.md)
+
 ## 📚 Storybook
 
 ### Component Stories
