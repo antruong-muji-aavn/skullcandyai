@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { NFTGrid } from '@/components/nft-grid';
 import { NFTCardClient } from '@/components/nft-card-client';
 import { Snackbar } from '@/components/snackbar';
@@ -34,12 +34,10 @@ const MOCK_PRODUCTS = [
 ];
 
 interface HomeClientProps {
-  products?: any[]; // Backend products for demo comparison
+  products?: any[]; // Optional for future use
 }
 
-export function HomeClient({ products: backendProducts = [] }: HomeClientProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [useBackendData, setUseBackendData] = useState(false);
+export function HomeClient(_props: HomeClientProps) {
   const [snackbar, setSnackbar] = useState({
     isOpen: false,
     message: '',
@@ -60,80 +58,19 @@ export function HomeClient({ products: backendProducts = [] }: HomeClientProps) 
     setSnackbar((prev) => ({ ...prev, isOpen: false }));
   };
 
-  // Choose data source for demo: frontend mock vs backend mock
-  const currentProducts = useBackendData ? backendProducts : MOCK_PRODUCTS;
-
-  // Filter products based on search query (case-insensitive, searches in name)
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return currentProducts;
-    }
-    
-    const query = searchQuery.toLowerCase();
-    return currentProducts.filter((product) => 
-      product.name.toLowerCase().includes(query)
-    );
-  }, [currentProducts, searchQuery]);
+  // Use only frontend mock data for live demo
 
   return (
     <>
       <section id="products" className="px-container py-20">
-        {/* Demo Toggle - For presentation purposes */}
-        <div className="max-w-container mx-auto mb-8">
-          <div className="flex justify-center gap-4 mb-8">
-            <button
-              onClick={() => setUseBackendData(false)}
-              className={`px-6 py-3 rounded-lg font-bold transition-all ${
-                !useBackendData 
-                  ? 'bg-primary-500 text-white' 
-                  : 'bg-glass-light text-white/70 hover:bg-glass-dark'
-              }`}
-            >
-              Frontend Mock Data (3 items)
-            </button>
-            <button
-              onClick={() => setUseBackendData(true)}
-              className={`px-6 py-3 rounded-lg font-bold transition-all ${
-                useBackendData 
-                  ? 'bg-primary-500 text-white' 
-                  : 'bg-glass-light text-white/70 hover:bg-glass-dark'
-              }`}
-            >
-              Backend Mock Data ({backendProducts.length} items)
-            </button>
-          </div>
-          <div className="text-center text-sm text-white/70 mb-4">
-            <strong>🎯 DEMO MODE:</strong> Both sources have mock data. AI agent will update both with real Figma content.
-          </div>
-        </div>
-
-        {/* NFT Grid with integrated header (SectionHeading + SearchBar) */}
+        {/* NFT Grid with integrated header */}
         <div className="max-w-container mx-auto">
           <NFTGrid
             title="MONTHLY SKULL CANDIES"
             description="Discover one of the most cutest NFT creations created for you. Place your bid and be the first to have these treasures. All of the artworks are limited selections."
-            searchPlaceholder="Search NFTs by name..."
             gap="md"
-            onSearchChange={setSearchQuery}
           >
-            {filteredProducts.length === 0 && searchQuery && (
-              <div className="col-span-full text-center py-12">
-                <p className="text-xl font-family-body">
-                  No NFTs found matching &ldquo;{searchQuery}&rdquo;
-                </p>
-                <p className="text-sm font-family-body opacity-70 mt-2">
-                  Try a different search term
-                </p>
-              </div>
-            )}
-            
-            {filteredProducts.length === 0 && !searchQuery && (
-              <div className="col-span-full text-center py-12">
-                <p className="text-xl font-family-body">No products available</p>
-              </div>
-            )}
-            
-            {filteredProducts.map((product) => {
+            {MOCK_PRODUCTS.map((product) => {
               // Fixed countdown for demo
               const countdown = { hours: 2, minutes: 15, seconds: 30 };
               

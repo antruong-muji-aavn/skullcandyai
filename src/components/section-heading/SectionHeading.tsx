@@ -8,6 +8,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
   align = 'center',
   searchPlaceholder = 'Search by topics or collections',
   onSearchChange,
+  showSearch = true,
   className = '',
 }) => {
   const alignClasses = {
@@ -16,7 +17,7 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
   };
 
   return (
-    <div className={`flex flex-col gap-[80px] w-full items-center ${className}`}>
+    <div className={`flex flex-col ${showSearch ? 'gap-[80px]' : 'gap-0'} w-full items-center ${className}`}>
       {/* Title Section */}
       <div className={`flex flex-col gap-[16px] w-full ${alignClasses[align]}`}>
         <h2 className="font-family-title font-bold text-[38px] tracking-[1.9px] uppercase text-white leading-normal max-w-[649px] mx-auto">
@@ -29,8 +30,10 @@ export const SectionHeading: React.FC<SectionHeadingProps> = ({
         )}
       </div>
       
-      {/* Search Bar */}
-      <SearchBar placeholder={searchPlaceholder} onChange={onSearchChange} />
+      {/* Search Bar - Only show if enabled */}
+      {showSearch && (
+        <SearchBar placeholder={searchPlaceholder} onChange={onSearchChange} />
+      )}
     </div>
   );
 };

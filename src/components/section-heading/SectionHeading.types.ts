@@ -14,6 +14,9 @@ export interface SectionHeadingProps {
   /** Search query change handler for live filtering */
   onSearchChange?: (query: string) => void;
   
+  /** Whether to show the search bar (default: true) */
+  showSearch?: boolean;
+  
   /** Additional CSS classes */
   className?: string;
 }

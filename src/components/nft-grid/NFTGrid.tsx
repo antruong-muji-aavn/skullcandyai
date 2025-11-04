@@ -21,6 +21,7 @@ export const NFTGrid: React.FC<NFTGridProps> = ({
   };
 
   const hasHeader = title || description;
+  const showSearch = !!onSearchChange; // Only show search if handler is provided
 
   return (
     <div className={`w-full ${className}`}>
@@ -32,6 +33,7 @@ export const NFTGrid: React.FC<NFTGridProps> = ({
             align="center"
             searchPlaceholder={searchPlaceholder}
             onSearchChange={onSearchChange}
+            showSearch={showSearch}
           />
         </div>
       )}
