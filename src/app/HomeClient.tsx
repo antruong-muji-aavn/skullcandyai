@@ -34,11 +34,12 @@ const MOCK_PRODUCTS = [
 ];
 
 interface HomeClientProps {
-  products?: any[]; // Made optional since we're using mock data
+  products?: any[]; // Backend products for demo comparison
 }
 
-export function HomeClient(_props: HomeClientProps) {
+export function HomeClient({ products: backendProducts = [] }: HomeClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  const [useBackendData, setUseBackendData] = useState(false);
   const [snackbar, setSnackbar] = useState({
     isOpen: false,
     message: '',
@@ -59,24 +60,53 @@ export function HomeClient(_props: HomeClientProps) {
     setSnackbar((prev) => ({ ...prev, isOpen: false }));
   };
 
-  // Use mock data instead of API data for demo
-  const demoProducts = MOCK_PRODUCTS;
+  // Choose data source for demo: frontend mock vs backend mock
+  const currentProducts = useBackendData ? backendProducts : MOCK_PRODUCTS;
 
   // Filter products based on search query (case-insensitive, searches in name)
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) {
-      return demoProducts;
+      return currentProducts;
     }
     
     const query = searchQuery.toLowerCase();
-    return demoProducts.filter((product) => 
+    return currentProducts.filter((product) => 
       product.name.toLowerCase().includes(query)
     );
-  }, [demoProducts, searchQuery]);
+  }, [currentProducts, searchQuery]);
 
   return (
     <>
       <section id="products" className="px-container py-20">
+        {/* Demo Toggle - For presentation purposes */}
+        <div className="max-w-container mx-auto mb-8">
+          <div className="flex justify-center gap-4 mb-8">
+            <button
+              onClick={() => setUseBackendData(false)}
+              className={`px-6 py-3 rounded-lg font-bold transition-all ${
+                !useBackendData 
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-glass-light text-white/70 hover:bg-glass-dark'
+              }`}
+            >
+              Frontend Mock Data (3 items)
+            </button>
+            <button
+              onClick={() => setUseBackendData(true)}
+              className={`px-6 py-3 rounded-lg font-bold transition-all ${
+                useBackendData 
+                  ? 'bg-primary-500 text-white' 
+                  : 'bg-glass-light text-white/70 hover:bg-glass-dark'
+              }`}
+            >
+              Backend Mock Data ({backendProducts.length} items)
+            </button>
+          </div>
+          <div className="text-center text-sm text-white/70 mb-4">
+            <strong>🎯 DEMO MODE:</strong> Both sources have mock data. AI agent will update both with real Figma content.
+          </div>
+        </div>
+
         {/* NFT Grid with integrated header (SectionHeading + SearchBar) */}
         <div className="max-w-container mx-auto">
           <NFTGrid

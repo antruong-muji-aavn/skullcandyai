@@ -3,9 +3,33 @@ import { Navbar } from '@/components/navbar';
 import { HeroSection } from '@/components/hero-section';
 import { HomeClient } from './HomeClient';
 
-// DEMO: Skip API calls - use mock data in components
-// This demonstrates AI agent will later connect to real API
-export default function Home() {
+// DEMO: Fetch backend data to show it also has mock data
+// This demonstrates AI agent will update both frontend and backend
+async function getProducts() {
+  try {
+    const response = await fetch('https://devday-aavn-d5284e914439.herokuapp.com/api/products', {
+      cache: 'no-store',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to fetch products: ${response.statusText}`);
+      return [];
+    }
+
+    const data = await response.json();
+    return data.data.products || [];
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+}
+
+export default async function Home() {
+  // Get backend products for demo (they now have mock data too)
+  const backendProducts = await getProducts();
 
   return (
     <div className="min-h-screen relative text-white">
@@ -28,7 +52,7 @@ export default function Home() {
       />
 
       {/* Monthly Collection Section with Live Search */}
-      <HomeClient />
+      <HomeClient products={backendProducts} />
     </div>
   );
 }
