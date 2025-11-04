@@ -3,86 +3,76 @@
 import { useState, useMemo } from 'react';
 import { NFTGrid } from '@/components/nft-grid';
 import { NFTCardClient } from '@/components/nft-card-client';
-import { Cart } from '@/components/cart';
 import { Snackbar } from '@/components/snackbar';
-import { generateRandomCountdown, generateCreatorName, isVerified } from '@/lib/utils';
-import { mapProductToCartItem, CartItemProps } from '@/components/cart/Cart.types';
-import type { Product } from '@/lib/types';
 
-// Helper to convert countdown string to object
-const parseCountdown = (countdownStr: string) => {
-  const [hours, minutes, seconds] = countdownStr.split(' : ').map(part => parseInt(part));
-  return { hours, minutes, seconds };
-};
+// Mock data for demo - only 3 items to show AI agent capabilities
+const MOCK_PRODUCTS = [
+  {
+    id: 1,
+    name: "[DEMO] Mock Shoe NFT #001",
+    image: "https://res.cloudinary.com/dtes5pcfm/image/upload/v1760925713/samples/shoe.jpg",
+    price: 1.25,
+    rating: 4.5,
+    tags: ["demo", "mock", "placeholder"]
+  },
+  {
+    id: 2, 
+    name: "[DEMO] Mock Shoe NFT #002",
+    image: "https://res.cloudinary.com/dtes5pcfm/image/upload/v1760925713/samples/shoe.jpg",
+    price: 2.50,
+    rating: 4.2,
+    tags: ["demo", "mock", "placeholder"]
+  },
+  {
+    id: 3,
+    name: "[DEMO] Mock Shoe NFT #003", 
+    image: "https://res.cloudinary.com/dtes5pcfm/image/upload/v1760925713/samples/shoe.jpg",
+    price: 0.99,
+    rating: 3.8,
+    tags: ["demo", "mock", "placeholder"]
+  }
+];
 
 interface HomeClientProps {
-  products: Product[];
+  products?: any[]; // Made optional since we're using mock data
 }
 
-export function HomeClient({ products }: HomeClientProps) {
+export function HomeClient(_props: HomeClientProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [cartItems, setCartItems] = useState<CartItemProps[]>([]);
   const [snackbar, setSnackbar] = useState({
     isOpen: false,
     message: '',
     type: 'info' as 'info' | 'success' | 'warning' | 'error',
   });
 
-  const handleAddToCart = (product: Product) => {
-    // Check if product is already in cart
-    const isAlreadyInCart = cartItems.some(item => item.id === String(product.id));
-    
-    if (isAlreadyInCart) {
-      // Show warning snackbar
-      setSnackbar({
-        isOpen: true,
-        message: `"${product.name}" is already in your cart!`,
-        type: 'warning',
-      });
-      return;
-    }
-
-    // Add to cart
-    const cartItem = mapProductToCartItem(product);
-    setCartItems((prevItems) => [...prevItems, cartItem]);
-    
-    // Show success snackbar
+  // For demo: Remove cart functionality - just show message
+  const handleBidNow = (product: typeof MOCK_PRODUCTS[0]) => {
+    // Show demo message instead of adding to cart
     setSnackbar({
       isOpen: true,
-      message: `"${product.name}" added to cart!`,
-      type: 'success',
+      message: `[DEMO] Bidding on "${product.name}" - Cart feature will be implemented by AI agent later!`,
+      type: 'info',
     });
-  };
-
-  const handleRemoveFromCart = (itemId: string) => {
-    const removedItem = cartItems.find(item => item.id === itemId);
-    setCartItems((prevItems) => prevItems.filter(item => item.id !== itemId));
-    
-    // Show info snackbar
-    if (removedItem) {
-      setSnackbar({
-        isOpen: true,
-        message: `"${removedItem.name}" removed from cart`,
-        type: 'info',
-      });
-    }
   };
 
   const handleCloseSnackbar = () => {
     setSnackbar((prev) => ({ ...prev, isOpen: false }));
   };
 
+  // Use mock data instead of API data for demo
+  const demoProducts = MOCK_PRODUCTS;
+
   // Filter products based on search query (case-insensitive, searches in name)
   const filteredProducts = useMemo(() => {
     if (!searchQuery.trim()) {
-      return products;
+      return demoProducts;
     }
     
     const query = searchQuery.toLowerCase();
-    return products.filter((product) => 
+    return demoProducts.filter((product) => 
       product.name.toLowerCase().includes(query)
     );
-  }, [products, searchQuery]);
+  }, [demoProducts, searchQuery]);
 
   return (
     <>
@@ -114,21 +104,23 @@ export function HomeClient({ products }: HomeClientProps) {
             )}
             
             {filteredProducts.map((product) => {
-              const countdown = parseCountdown(generateRandomCountdown());
+              // Fixed countdown for demo
+              const countdown = { hours: 2, minutes: 15, seconds: 30 };
+              
               return (
                 <NFTCardClient
                   key={product.id}
                   image={product.image}
                   imageAlt={`${product.name} NFT artwork`}
                   title={product.name}
-                  author={generateCreatorName(product.tags)}
-                  verified={isVerified(product.rating)}
+                  author="Demo Creator [MOCK]"
+                  verified={false}
                   countdown={countdown}
                   price={product.price.toFixed(2)}
                   currency="ETH"
                   currencyIcon="/ethereum-icon.svg"
                   buttonText="Bid now"
-                  onButtonClick={() => handleAddToCart(product)}
+                  onButtonClick={() => handleBidNow(product)}
                 />
               );
             })}
@@ -136,8 +128,8 @@ export function HomeClient({ products }: HomeClientProps) {
         </div>
       </section>
 
-      {/* Cart Component - Always show on the screen */}
-      <Cart items={cartItems} onRemoveItem={handleRemoveFromCart} />
+      {/* Cart Component - Removed for demo, will be implemented later */}
+      {/* <Cart items={cartItems} onRemoveItem={handleRemoveFromCart} /> */}
 
       {/* Snackbar for notifications */}
       <Snackbar

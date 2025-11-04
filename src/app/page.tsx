@@ -1,34 +1,11 @@
 import React from 'react';
-import type { Product } from '@/lib/types';
 import { Navbar } from '@/components/navbar';
 import { HeroSection } from '@/components/hero-section';
 import { HomeClient } from './HomeClient';
 
-// Fetch products on the server side to avoid CORS issues
-async function getProducts(): Promise<Product[]> {
-  try {
-    const response = await fetch('https://devday-aavn-d5284e914439.herokuapp.com/api/products', {
-      cache: 'no-store',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      console.error(`Failed to fetch products: ${response.statusText}`);
-      return [];
-    }
-
-    const data = await response.json();
-    return data.data.products || [];
-  } catch (error) {
-    console.error('Error fetching products:', error);
-    return [];
-  }
-}
-
-export default async function Home() {
-  const products = await getProducts();
+// DEMO: Skip API calls - use mock data in components
+// This demonstrates AI agent will later connect to real API
+export default function Home() {
 
   return (
     <div className="min-h-screen relative text-white">
@@ -51,7 +28,7 @@ export default async function Home() {
       />
 
       {/* Monthly Collection Section with Live Search */}
-      <HomeClient products={products} />
+      <HomeClient />
     </div>
   );
 }
