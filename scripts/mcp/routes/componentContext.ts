@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { getComponent } from '../helpers/components';
-import { getTokens } from '../helpers/tokens';
+import { normalizeComponentTokens } from '../helpers/tokenNormalizer';
 
 const router = Router();
 
@@ -13,9 +13,8 @@ router.get('/', (req: Request, res: Response) => {
 
   if (!name || typeof name !== 'string') {
     return res.status(400).json({
-      meta: { version: '0.1.0', source: 'skullcandy-mcp' },
-      status: 'error',
-      message: 'Missing or invalid "name" query parameter',
+      meta: { version: '0.2.0', source: 'skullcandy-mcp' },
+      error: 'Missing or invalid "name" query parameter',
     });
   }
 
@@ -23,54 +22,47 @@ router.get('/', (req: Request, res: Response) => {
 
   if (!component) {
     return res.status(404).json({
-      meta: { version: '0.1.0', source: 'skullcandy-mcp' },
-      status: 'error',
-      message: `Component "${name}" not found`,
+      meta: { version: '0.2.0', source: 'skullcandy-mcp' },
+      error: `Component "${name}" not found`,
     });
   }
 
-  // Get tokens used by this component
-  let componentTokens = {};
-  if (component.tokens && component.tokens.length > 0) {
-    try {
-      const allTokens = getTokens();
-      // Filter to only tokens used by this component
-      componentTokens = component.tokens.reduce((acc, tokenName) => {
-        // Search through all token categories
-        for (const [category, tokens] of Object.entries(allTokens)) {
-          if (typeof tokens === 'object' && tokens !== null) {
-            for (const [key, value] of Object.entries(tokens)) {
-              if (
-                tokenName.includes(key) ||
-                `--${key}` === tokenName ||
-                tokenName.includes(category)
-              ) {
-                if (!acc[category]) acc[category] = {};
-                acc[category][key] = value;
-              }
-            }
-          }
-        }
-        return acc;
-      }, {} as Record<string, any>);
-    } catch (error) {
-      console.error('Error loading tokens:', error);
-    }
-  }
+  // Normalize tokens for MCP output
+  const normalizedTokens = normalizeComponentTokens(
+    component.tokens || [],
+    true,  // includeValues
+    true   // includeFigmaMappings
+  );
 
   return res.json({
-    meta: { version: '0.1.0', source: 'skullcandy-mcp' },
-    data: {
-      component: name,
+    meta: { version: '0.2.0', source: 'skullcandy-mcp' },
+    component: {
+      name,
+      import: component.import,
+      props: component.props,
+      examples: component.examples || [],
       figma: component.figma || {},
-      code: {
-        import: component.import,
-        props: component.props,
-        example: component.examples[0] || '',
-      },
-      tokens: componentTokens,
     },
-    status: 'ok',
+    tokens: {
+      // MCP-friendly normalized token names (agent uses these)
+      required: normalizedTokens.names,
+      
+      // Actual CSS variables (for code generation)
+      cssVars: normalizedTokens.cssVars,
+      
+      // Resolved values (optional reference)
+      resolved: normalizedTokens.resolved,
+      
+      // Figma mappings (shows relationship between Figma, CSS, and MCP)
+      figmaMappings: normalizedTokens.figmaMappings,
+      
+      // Guidelines for agents
+      guidelines: {
+        noHardcodedHex: true,
+        noInlinePxIfTokenExists: true,
+        useCSSVarsInCode: true,
+      },
+    },
   });
 });
 

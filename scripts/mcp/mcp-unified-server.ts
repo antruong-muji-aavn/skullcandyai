@@ -2,64 +2,64 @@ import express, { Application, Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import { loadComponents } from './helpers/components';
 import { getTokens } from './helpers/tokens';
+import { normalizeComponentTokens } from './helpers/tokenNormalizer';
+// Import all tools from Next.js config (shared definition)
+import { ALL_TOOLS } from '../../src/app/mcp/tools-config';
+// Import all tool handlers from Next.js (shared implementation)
+import {
+  // Tier 0
+  handleListComponents,
+  handleGetComponentContext,
+  handleCompareVariants,
+  handleListTokens,
+  // Tier 1
+  handleExtractLayout,
+  handleAnalyzeTokens,
+  handleMatchComponents,
+  // Tier 2
+  handleImplementationSteps,
+  handleScaffoldComponent,
+  handleScaffoldScreen,
+  // Tier 3
+  handleValidateTokenUsage,
+  handleValidateA11yRules,
+  handleDiffFigmaVsCode,
+  // Tier 4
+  handleGenerateDocs,
+  handleExportStory,
+} from '../../src/app/mcp/tools-handlers';
 
 const MCP_VERSION = '2024-11-05';
 const SERVER_NAME = 'skullcandy-mcp-server';
-const SERVER_VERSION = '0.1.0';
-const PORT = 3001;
+const SERVER_VERSION = '0.2.0';
+const PORT = process.env.MCP_PORT ? parseInt(process.env.MCP_PORT) : 3001;
 
-// MCP Tools Definition
-const TOOLS = [
-  {
-    name: 'get_component_context',
-    description: 'Get unified context (figma, code, tokens) for a component. Use this before suggesting any component code.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Component name (e.g., Button, NFTCard, SearchBar)',
-        },
-      },
-      required: ['name'],
-    },
-  },
-  {
-    name: 'list_components',
-    description: 'List all available design system components.',
-    inputSchema: {
-      type: 'object',
-      properties: {},
-    },
-  },
-  {
-    name: 'list_tokens',
-    description: 'List design tokens. Optionally filter by scope (color, spacing, typography, radius, effects).',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        scope: {
-          type: 'string',
-          description: 'Comma-separated scopes: color,spacing,typography',
-        },
-      },
-    },
-  },
-  {
-    name: 'compare_variants',
-    description: 'Compare Figma variants vs code props for a component.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        name: {
-          type: 'string',
-          description: 'Component name to compare',
-        },
-      },
-      required: ['name'],
-    },
-  },
-];
+// Use the same tool definitions as Next.js MCP
+const TOOLS = ALL_TOOLS;
+
+// Tool name to handler mapping (same as Next.js)
+const TOOL_HANDLERS: Record<string, (args: any) => Promise<any>> = {
+  // Tier 0 - Core Discovery
+  'list_components': handleListComponents,
+  'get_component_context': handleGetComponentContext,
+  'compare_variants': handleCompareVariants,
+  'list_tokens': handleListTokens,
+  // Tier 1 - Bridge (Figma → DS)
+  'extract_layout': handleExtractLayout,
+  'analyze_tokens': handleAnalyzeTokens,
+  'match_components': handleMatchComponents,
+  // Tier 2 - Planning & Scaffolding
+  'implementation_steps': handleImplementationSteps,
+  'scaffold_component': handleScaffoldComponent,
+  'scaffold_screen': handleScaffoldScreen,
+  // Tier 3 - Validation & Linting
+  'validate_token_usage': handleValidateTokenUsage,
+  'validate_a11y_rules': handleValidateA11yRules,
+  'diff_figma_vs_code': handleDiffFigmaVsCode,
+  // Tier 4 - Documentation & Export
+  'generate_docs': handleGenerateDocs,
+  'export_story': handleExportStory,
+};
 
 /**
  * Handle MCP JSON-RPC requests
@@ -84,103 +84,17 @@ async function handleMCPRequest(request: any, _req: Request): Promise<any> {
       return { tools: TOOLS };
 
     case 'tools/call': {
-      const { name, arguments: args } = params;
+      const { name, arguments: args = {} } = params;
 
       try {
-        let result;
-
-        switch (name) {
-          case 'get_component_context': {
-            const componentName = args.name;
-            const components = loadComponents();
-            const component = components[componentName];
-
-            if (!component) {
-              throw new Error(`Component not found: ${componentName}`);
-            }
-
-            const tokens = getTokens();
-            const componentTokens = component.tokens || [];
-            const relevantTokens: any = {};
-            componentTokens.forEach((tokenName: string) => {
-              Object.keys(tokens).forEach((scope) => {
-                if (tokens[scope][tokenName]) {
-                  if (!relevantTokens[scope]) relevantTokens[scope] = {};
-                  relevantTokens[scope][tokenName] = tokens[scope][tokenName];
-                }
-              });
-            });
-
-            result = {
-              meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
-              data: {
-                component: {
-                  name: componentName,
-                  import: component.import,
-                  props: component.props,
-                  examples: component.examples,
-                  figma: component.figma,
-                },
-                tokens: relevantTokens,
-              },
-            };
-            break;
-          }
-          case 'list_components': {
-            const components = loadComponents();
-            result = {
-              meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
-              data: {
-                components: Object.keys(components),
-                count: Object.keys(components).length,
-              },
-            };
-            break;
-          }
-          case 'list_tokens': {
-            const scope = args.scope;
-            const tokens = getTokens(scope);
-            result = {
-              meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
-              data: {
-                scope: scope || 'all',
-                tokens,
-              },
-            };
-            break;
-          }
-          case 'compare_variants': {
-            const componentName = args.name;
-            const components = loadComponents();
-            const component = components[componentName];
-
-            if (!component) {
-              throw new Error(`Component not found: ${componentName}`);
-            }
-
-            const figmaVariants = component.figma?.variants || {};
-            const codeProps = component.props || {};
-
-            result = {
-              meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
-              data: {
-                component: componentName,
-                figma: figmaVariants,
-                code: codeProps,
-                comparison: {
-                  figmaOnly: Object.keys(figmaVariants).filter(
-                    (k: string) => !codeProps[k]
-                  ),
-                  codeOnly: Object.keys(codeProps).filter((k: string) => !figmaVariants[k]),
-                  shared: Object.keys(figmaVariants).filter((k: string) => codeProps[k]),
-                },
-              },
-            };
-            break;
-          }
-          default:
-            throw new Error(`Unknown tool: ${name}`);
+        // Use shared tool handlers (same as Next.js)
+        const handler = TOOL_HANDLERS[name];
+        
+        if (!handler) {
+          throw new Error(`Unknown tool: ${name}. Available tools: ${Object.keys(TOOL_HANDLERS).join(', ')}`);
         }
+
+        const result = await handler(args);
 
         return {
           content: [
@@ -269,43 +183,64 @@ app.get('/component-context', (req: Request, res: Response) => {
   try {
     const componentName = req.query.name as string;
     if (!componentName) {
-      return res.status(400).json({ error: 'Missing required parameter: name' });
+      return res.status(400).json({
+        meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
+        error: 'Missing required parameter: name'
+      });
     }
 
     const components = loadComponents();
     const component = components[componentName];
 
     if (!component) {
-      return res.status(404).json({ error: `Component not found: ${componentName}` });
+      return res.status(404).json({
+        meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
+        error: `Component not found: ${componentName}`
+      });
     }
 
-    const tokens = getTokens();
-    const componentTokens = component.tokens || [];
-    const relevantTokens: any = {};
-    componentTokens.forEach((tokenName: string) => {
-      Object.keys(tokens).forEach((scope) => {
-        if (tokens[scope][tokenName]) {
-          if (!relevantTokens[scope]) relevantTokens[scope] = {};
-          relevantTokens[scope][tokenName] = tokens[scope][tokenName];
-        }
-      });
-    });
+    // Normalize tokens for MCP output
+    const normalizedTokens = normalizeComponentTokens(
+      component.tokens || [],
+      true,  // includeValues
+      true   // includeFigmaMappings
+    );
 
     res.json({
       meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
-      data: {
-        component: {
-          name: componentName,
-          import: component.import,
-          props: component.props,
-          examples: component.examples,
-          figma: component.figma,
+      component: {
+        name: componentName,
+        import: component.import,
+        props: component.props,
+        examples: component.examples || [],
+        figma: component.figma || {},
+      },
+      tokens: {
+        // MCP-friendly normalized token names (agent uses these)
+        required: normalizedTokens.names,
+        
+        // Actual CSS variables (for code generation)
+        cssVars: normalizedTokens.cssVars,
+        
+        // Resolved values (optional reference)
+        resolved: normalizedTokens.resolved,
+        
+        // Figma mappings (shows relationship between Figma, CSS, and MCP)
+        figmaMappings: normalizedTokens.figmaMappings,
+        
+        // Guidelines for agents
+        guidelines: {
+          noHardcodedHex: true,
+          noInlinePxIfTokenExists: true,
+          useCSSVarsInCode: true,
         },
-        tokens: relevantTokens,
       },
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ 
+      meta: { version: SERVER_VERSION, source: 'skullcandy-mcp' },
+      error: error.message 
+    });
   }
 });
 

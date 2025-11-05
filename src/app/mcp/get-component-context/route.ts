@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import componentsData from '@/../../data/components.json';
+import { normalizeComponentTokens } from '@/../../scripts/mcp/helpers/tokenNormalizer';
 
 type ComponentData = {
   import: string;
@@ -18,9 +19,8 @@ export async function GET(request: NextRequest) {
   if (!name) {
     return NextResponse.json(
       {
-        meta: { version: '0.1.0', source: 'skullcandy-mcp' },
-        status: 'error',
-        message: 'Missing required parameter: name',
+        meta: { version: '0.2.0', source: 'skullcandy-mcp' },
+        error: 'Missing required parameter: name',
       },
       { status: 400 }
     );
@@ -31,28 +31,51 @@ export async function GET(request: NextRequest) {
   if (!componentData) {
     return NextResponse.json(
       {
-        meta: { version: '0.1.0', source: 'skullcandy-mcp' },
-        status: 'error',
-        message: `Component '${name}' not found`,
+        meta: { version: '0.2.0', source: 'skullcandy-mcp' },
+        error: `Component '${name}' not found`,
       },
       { status: 404 }
     );
   }
 
+  // Normalize tokens for MCP output
+  const normalizedTokens = normalizeComponentTokens(
+    componentData.tokens || [],
+    true,  // includeValues
+    true   // includeFigmaMappings
+  );
+
   return NextResponse.json({
     meta: {
-      version: '0.1.0',
+      version: '0.2.0',
       source: 'skullcandy-mcp',
     },
-    data: {
-      component: {
-        name,
-        import: componentData.import,
-        props: componentData.props,
-        examples: componentData.examples,
-        figma: componentData.figma,
+    component: {
+      name,
+      import: componentData.import,
+      props: componentData.props,
+      examples: componentData.examples || [],
+      figma: componentData.figma || {},
+    },
+    tokens: {
+      // MCP-friendly normalized token names (agent uses these)
+      required: normalizedTokens.names,
+      
+      // Actual CSS variables (for code generation)
+      cssVars: normalizedTokens.cssVars,
+      
+      // Resolved values (optional reference)
+      resolved: normalizedTokens.resolved,
+      
+      // Figma mappings (shows relationship between Figma, CSS, and MCP)
+      figmaMappings: normalizedTokens.figmaMappings,
+      
+      // Guidelines for agents
+      guidelines: {
+        noHardcodedHex: true,
+        noInlinePxIfTokenExists: true,
+        useCSSVarsInCode: true,
       },
-      tokens: {},
     },
   });
 }
