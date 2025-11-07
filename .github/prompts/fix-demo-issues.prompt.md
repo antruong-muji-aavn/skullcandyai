@@ -23,9 +23,29 @@ description: 'Transform demo with wrong layout/missing features → Production-r
 
 **Backend API Endpoint**: `https://devday-aavn-d5284e914439.herokuapp.com/api/products`
 
+**⚠️ CRITICAL: Follow Project Instructions**:
+- **Component Updates**: Follow `.github/instructions/component-patterns.instructions.md`
+  - Use semantic token classes (NOT hardcoded values)
+  - Follow 5-step component development workflow
+  - Use TypeScript interfaces and proper naming conventions
+  - Verify design token usage and accessibility
+
+- **Figma MCP Integration**: Follow `.github/instructions/figma-mcp.instructions.md`
+  - ALWAYS call `get_design_context` → `get_variable_defs` → `get_screenshot`
+  - NEVER estimate measurements from screenshots
+  - Extract exact values from Figma node metadata
+  - Translate Figma MCP output to project conventions
+  - Convert blur values (Figma 200 → CSS 100px)
+
+**DO NOT PROCEED WITHOUT READING THESE INSTRUCTION FILES**
+
 ---
 
 ## ⚠️ CRITICAL: MANDATORY MCP TOOL USAGE
+
+> **📖 Context**: This workflow integrates two instruction files:
+> - `.github/instructions/component-patterns.instructions.md` - How to update components properly
+> - `.github/instructions/figma-mcp.instructions.md` - How to interact with Figma MCP correctly
 
 **YOU MUST CALL THESE SKULLCANDY MCP TOOLS - NO EXCEPTIONS:**
 
@@ -43,16 +63,26 @@ The SkullCandy MCP server provides deterministic validation that ensures:
 - ✅ Component API correctness
 - ✅ Design system parity
 
+**Component Development Workflow** (per component-patterns.instructions.md):
+1. **Analyze** - Review Figma design via MCP
+2. **Plan** - Create detailed implementation plan
+3. **WAIT** - Get user confirmation (⚠️ CRITICAL)
+4. **Execute** - Implement after approval
+5. **Validate** - Use SkullCandy MCP tools to verify
+
 **DO NOT SKIP** - These tools are the source of truth for validation.
 
 ---
 
 ## Phase 1: Validate Figma Design Context
 
+> **📖 Reference**: Follow `.github/instructions/figma-mcp.instructions.md` - Required Flow section
+
 ### Step 1.1: Extract Design Specifications
 
 ```bash
 # Use Figma MCP to get exact measurements
+# ⚠️ Per figma-mcp.instructions.md: ALWAYS call get_design_context first
 mcp_figma-mcp-ser_get_design_context(
   nodeId="121:6097",
   clientLanguages="typescript",
@@ -61,10 +91,16 @@ mcp_figma-mcp-ser_get_design_context(
 ```
 
 **Extract from response**:
-- Container padding values
-- Gap spacing (itemSpacing)
+- Container padding values (EXACT from Figma metadata - DO NOT estimate)
+- Gap spacing (itemSpacing field - THIS IS CRITICAL)
 - Layout mode (HORIZONTAL/VERTICAL)
 - Search field dimensions
+
+**⚠️ Critical from figma-mcp.instructions.md**:
+- ❌ NEVER estimate or calculate from screenshots
+- ✅ ALWAYS use Figma node metadata fields
+- Read `paddingLeft`, `paddingRight`, `paddingTop`, `paddingBottom`
+- Read `itemSpacing` for gaps between children
 
 ### Step 1.2: Get Metadata Overview
 
@@ -217,6 +253,8 @@ gap-6  // Only use if Figma metadata confirms same H/V values
 
 ### Step 2.3: Fix Gap Classes
 
+> **📖 Reference**: Follow `.github/instructions/component-patterns.instructions.md` - Styling Rules section
+
 **File**: `src/components/nft-grid/NFTGrid.tsx`
 
 **Change Required**:
@@ -236,6 +274,12 @@ gap-6  // Only use if Figma metadata confirms same H/V values
     lg: 'gap-x-8 gap-y-32',    // Keep proportional
   };
 ```
+
+**⚠️ Per component-patterns.instructions.md**:
+- ✅ Use design token classes (gap-x-6 = 24px token)
+- ❌ NEVER use hardcoded values like `gap-[24px]`
+- Follow spacing scale: 0, 2, 4, 8, 12, 16, 20, 24, 32, 40, 48, 64, 80, 96, 128px
+- Priority: Semantic Tokens → Tailwind Utilities → Component Classes
 
 **Validation** ⚠️ MANDATORY:
 ```bash
@@ -299,6 +343,8 @@ grep_search(
 
 ## Phase 3: Enable Search Bar
 
+> **📖 Reference**: Follow `.github/instructions/component-patterns.instructions.md` - Component Reuse Strategy
+
 ### Step 3.1: Check SearchBar Component ⚠️ MANDATORY
 
 ```bash
@@ -310,6 +356,12 @@ mcp_skullcandy-mc_get_component_context(name="SearchBar")
 - Component exists at `@/components/search-bar`
 - Props: `placeholder`, `value`, `onChange`
 - Size variants available
+
+**⚠️ Per component-patterns.instructions.md - Component Reuse Strategy**:
+- ✅ ALWAYS check existing components before creating new ones
+- ✅ Use composition pattern (compose existing components)
+- ❌ NEVER duplicate component logic
+- Check `src/components/` directory for reusable components
 
 **❌ DO NOT PROCEED WITHOUT CALLING THIS TOOL**
 
@@ -949,10 +1001,13 @@ mcp_skullcandy-mc_validate_a11y_rules(
 
 ## Phase 7: Visual Validation
 
+> **📖 Reference**: Follow `.github/instructions/figma-mcp.instructions.md` - Validation Checklist
+
 ### Step 7.1: Compare with Figma Screenshot
 
 ```bash
 # Get Figma screenshot for comparison
+# ⚠️ Per figma-mcp.instructions.md: ALWAYS get screenshot for visual validation
 mcp_figma-mcp-ser_get_screenshot(
   nodeId="121:6097",
   clientLanguages="typescript",
@@ -960,13 +1015,18 @@ mcp_figma-mcp-ser_get_screenshot(
 )
 ```
 
-**Manual Check**:
-- [ ] Gap spacing matches (24px uniform)
+**Manual Check** (per figma-mcp.instructions.md Validation Checklist):
+- [ ] Visual match with Figma screenshot (pixel-perfect)
+- [ ] Gap spacing matches (24px horizontal × 96px vertical from metadata)
 - [ ] Product cards align properly
 - [ ] Search bar visible and positioned correctly
 - [ ] Typography matches (Orbitron titles, Outfit body)
 - [ ] Colors match (glass morphism backgrounds)
 - [ ] Border radius consistent
+- [ ] All semantic tokens used (no hardcoded values)
+- [ ] Existing components reused (no duplication)
+- [ ] Blur values divided by 2 if applicable (Figma 200 → CSS 100px)
+- [ ] Accessibility validated (ARIA, keyboard navigation)
 
 ### Step 7.2: Responsive Testing
 
@@ -1124,6 +1184,64 @@ After all fixes applied:
    - Run this prompt to fix issues
    - Show "after" state (proper spacing, 23 products, search + cart working)
    - Highlight zero assumptions (all from Figma metadata)
+
+---
+
+## 📚 Instruction File Integration Summary
+
+This prompt integrates with two critical instruction files that **MUST** be followed:
+
+### 1. Component Patterns (`.github/instructions/component-patterns.instructions.md`)
+
+**When to Use**: Every time you modify a component file in `src/components/`
+
+**Key Rules Applied in This Prompt**:
+- **Phase 2 (Fix Layout)**: Uses semantic token classes, follows spacing scale
+- **Phase 3 (Search)**: Checks existing components before creating new ones
+- **Phase 5 (Cart)**: Follows TypeScript interfaces and component architecture
+- **Phase 6 (Validation)**: Verifies design token usage and accessibility
+
+**Critical Sections Referenced**:
+- Component Development Workflow (5-step process)
+- Design Token System (semantic classes, spacing, effects)
+- Styling Rules (priority hierarchy, no hardcoded values)
+- Component Architecture (file structure, composition patterns)
+
+### 2. Figma MCP Integration (`.github/instructions/figma-mcp.instructions.md`)
+
+**When to Use**: Every time you call a Figma MCP tool
+
+**Key Rules Applied in This Prompt**:
+- **Phase 1 (Validate Design)**: Calls get_design_context → get_variable_defs → get_screenshot
+- **Phase 2 (Fix Layout)**: Uses Figma metadata (NEVER estimates from screenshots)
+- **Phase 7 (Visual Validation)**: Validates 1:1 pixel-perfect match
+
+**Critical Sections Referenced**:
+- Required Flow (DO NOT SKIP)
+- Implementation Rules (measurement & constraints)
+- Translation Guide (Figma MCP output → project code)
+- Validation Checklist (visual match, tokens, components, accessibility)
+
+### Integration Points in This Prompt
+
+| Phase | Component Patterns Rule | Figma MCP Rule |
+|-------|------------------------|----------------|
+| **Phase 1.1-1.2** | - | Extract exact measurements from metadata |
+| **Phase 1.3** | - | Use extract_layout tool for structure |
+| **Phase 2.2-2.3** | Use semantic token classes | Match itemSpacing exactly |
+| **Phase 3.1** | Check existing components | - |
+| **Phase 6** | Validate token usage, a11y | - |
+| **Phase 7** | - | Pixel-perfect visual validation |
+
+### How to Use These Instructions
+
+1. **Before Starting**: Read both instruction files completely
+2. **During Implementation**: Reference specific sections as prompted
+3. **After Changes**: Validate against both instruction checklists
+
+**Quick Access**:
+- Component patterns: `.github/instructions/component-patterns.instructions.md`
+- Figma MCP rules: `.github/instructions/figma-mcp.instructions.md`
 
 ---
 
